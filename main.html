@@ -39,6 +39,12 @@
                 text-align: center;
                 padding: 24px;
             }
+            .text-color {
+                font-size: 14px;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                opacity: 0.7;
+            }
             input[type="color"] {
                 width: 44px;
                 height: 32px;
@@ -72,6 +78,7 @@
         <div class="phrase" id="phrase">
             The quick brown fox jumps over the lazy dog.
         </div>
+        <div class="text-color" id="text-color"></div>
 
         <script>
             function rgb_to_luminance(rgb) {
@@ -129,6 +136,7 @@
             const picker = document.getElementById("picker");
             const contrastInput = document.getElementById("contrast");
             const phrase = document.getElementById("phrase");
+            const textColor = document.getElementById("text-color");
 
             function apply() {
                 const bgHex = picker.value;
@@ -139,9 +147,11 @@
                 );
 
                 const textRgb = contrast_color(bgRgb, contrast);
+                const textCss = rgbToCss(textRgb);
 
                 document.body.style.backgroundColor = bgHex;
-                phrase.style.color = rgbToCss(textRgb);
+                phrase.style.color = textCss;
+                textColor.textContent = textCss;
             }
 
             picker.addEventListener("input", apply);
