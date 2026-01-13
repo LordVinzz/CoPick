@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="fr">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>Color picker + contrast_color</title>
+        <style>
+            :root {
+                font-family:
+                    system-ui,
+                    -apple-system,
+                    Segoe UI,
+                    Roboto,
+                    Arial,
+                    sans-serif;
+            }
+            body {
+                margin: 0;
+                min-height: 100vh;
+                display: grid;
+                place-items: center;
+                transition: background-color 0.15s linear;
+            }
+            .controls {
+                position: fixed;
+                top: 16px;
+                left: 16px;
+                display: flex;
+                gap: 12px;
+                align-items: center;
+                background: rgba(255, 255, 255, 0.85);
+                padding: 10px 14px;
+                border-radius: 14px;
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            }
+            .phrase {
+                font-size: clamp(24px, 5vw, 48px);
+                font-weight: 600;
+                text-align: center;
+                padding: 24px;
+            }
+            input[type="color"] {
+                width: 44px;
+                height: 32px;
+                border: none;
+                background: none;
+                cursor: pointer;
+            }
+            input[type="number"] {
+                width: 80px;
+                padding: 6px 8px;
+                border-radius: 10px;
+                border: 1px solid rgba(0, 0, 0, 0.25);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="controls">
+            <strong>Background</strong>
+            <input id="picker" type="color" value="#2d6cdf" />
+            <strong>Contrast</strong>
+            <input
+                id="contrast"
+                type="number"
+                min="1"
+                step="0.1"
+                value="4.5"
+                max="21"
+            />
+        </div>
+
+        <div class="phrase" id="phrase">
+            The quick brown fox jumps over the lazy dog.
+        </div>
+
+        <script>
+            function rgb_to_luminance(rgb) {
+                function channel(c) {
+                    c = c / 255.0;
+                    return c <= 0.03928
+                        ? c / 12.92
+                        : ((c + 0.055) / 1.055) ** 2.4;
+                }
+                let [r, g, b] = rgb.map(channel);
+                return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            }
+
+            function luminance_to_rgb_gray(L) {
+                function inv_channel(c) {
+                    return c <= 0.0031308
+                        ? 12.92 * c
+                        : 1.055 * c ** (1 / 2.4) - 0.055;
+                }
+                let v = Math.round(
+                    inv_channel(Math.max(0, Math.min(1, L))) * 255,
+                );
+                v = Math.max(0, Math.min(255, v));
+                return [v, v, v];
+            }
+
+            function contrast_color(background_rgb, contrast) {
+                const L_bg = rgb_to_luminance(background_rgb);
+                let L;
+
+                if (
+                    background_rgb[0] + background_rgb[1] <
+                        background_rgb[1] * background_rgb[1] +
+                            210 -
+                            148 * Math.pow(background_rgb[2], 0.5) &&
+                    background_rgb[1] < 173
+                ) {
+                    L = contrast * (L_bg + 0.05) - 0.05;
+                } else {
+                    L = (L_bg + 0.05) / contrast - 0.05;
+                }
+
+                return luminance_to_rgb_gray(Math.max(0, Math.min(1, L)));
+            }
+
+            function hexToRgb(hex) {
+                const v = parseInt(hex.slice(1), 16);
+                return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+            }
+
+            function rgbToCss(rgb) {
+                return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+            }
+
+            const picker = document.getElementById("picker");
+            const contrastInput = document.getElementById("contrast");
+            const phrase = document.getElementById("phrase");
+
+            function apply() {
+                const bgHex = picker.value;
+                const bgRgb = hexToRgb(bgHex);
+                const contrast = Math.max(
+                    1,
+                    Number(contrastInput.value) || 4.5,
+                );
+
+                const textRgb = contrast_color(bgRgb, contrast);
+
+                document.body.style.backgroundColor = bgHex;
+                phrase.style.color = rgbToCss(textRgb);
+            }
+
+            picker.addEventListener("input", apply);
+            contrastInput.addEventListener("input", apply);
+            apply();
+        </script>
+    </body>
+</html>
